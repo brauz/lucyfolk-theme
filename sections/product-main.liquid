@@ -1,0 +1,80 @@
+{% liquid
+  assign color_key = 'color,colors,colour,colours' | split: ','
+  assign current_variant = product.selected_or_first_available_variant
+
+  if product.options_with_values.size > 1
+    for key in color_key
+      if product.options_by_name[key].values.size > 1
+        assign option_value = current_variant.option1
+      endif
+    endfor
+
+    if option_value == blank
+      assign option_value = current_variant.option2
+    endif
+  else
+    assign option_value = current_variant.option1
+  endif
+%}
+
+<script type="text/javascript">
+  var productState = {
+    "initProduct": {%- render 'product-json', item: product -%},
+    "afterpayEnable": {{ settings.product_afterpay_enable | json }},
+    "lowStockThreshold": {{ settings.low_stock_threshold | default: 0 }},
+    "lowStockMessage": {{ settings.low_stock_message | json }}
+  }
+</script>
+
+<product-main
+  class="js-anchor-section js-product-main flex flex-col bg-background lg:flex-row"
+  id="product-details"
+  data-title="Details"
+  data-handle="{{- product.handle -}}"
+  data-id="{{- product.id -}}"
+>
+  <div class="w-full overflow-hidden lg:w-[calc(828/1440*100%)]">
+    {%- if product.media.size == 0 -%}
+      <div class="js-product-gallery w-full">
+        {%- if settings.default_image != blank -%}
+          {%- render 'image', image: settings.default_image, alt: 'default image' -%}
+        {%- else -%}
+          {%- assign image = 'image-placeholder.png' | asset_url -%}
+          {%- render 'image-native', image: image, alt: 'image placeholder' -%}
+        {%- endif -%}
+      </div>
+    {%- else -%}
+      {%- render 'product-gallery', option_value: option_value, enable_zoom: section.settings.enable_zoom -%}
+    {%- endif -%}
+  </div>
+  <div class="js-wrapper-content-product scroll-trigger animate--slide-in w-full flex-shrink-0 overflow-hidden px-3 pb-8 pt-6 lg:sticky lg:top-0 lg:h-fit lg:flex-1 lg:px-6 lg:pt-[110px] xl:px-10 xl:pb-10 2xl:pl-[100px] 2xl:pr-[140px]">
+    {%- liquid
+      render 'product-info'
+
+      if product.tags contains 'price_on_application'
+        render 'product-application'
+      else
+        render 'product-form'
+      endif
+
+      render 'brauz-find-in-store'
+    -%}
+    <div class="pt-5 lg:pt-[38px]">
+      {%- render 'product-description' -%}
+    </div>
+  </div>
+</product-main>
+
+{%- liquid
+  render 'anchor-section'
+  render 'size-guide'
+  render 'product-description-modal'
+-%}
+
+{%- render 'atom-script', name: 'section-product-main' -%}
+
+{% schema %}
+{
+  "name": "Product main"
+}
+{% endschema %}
